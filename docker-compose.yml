@@ -1,0 +1,89 @@
+version: '3.5'
+services:
+  https-portal:
+    image: steveltn/https-portal:1
+    ports:
+      - '80:80'
+      - '443:443'
+    links:
+      - web
+    environment:
+      STAGE: 'local'
+      DOMAINS: >-
+        sample.localhost -> http://web:8000, 
+        test.localhost -> http://web:8000
+      # FORCE_RENEW: 'true'
+    volumes:
+      - ssl:/var/lib/https-portal
+  web:
+      image: seiyu/php7.4.2:latest
+      container_name: web
+      ports:
+        - '127.0.0.1:8000:8000'
+      volumes:
+        - app:/var/www/html
+        - app_log:/var/log/apache2
+        - apache:/etc/apache2/sites-available
+      networks:
+        default:
+          ipv4_address: 172.16.0.4
+      environment:
+        TZ: Asia/Tokyo
+  db:
+      image: seiyu/db5.7:latest
+      container_name: db
+      ports:
+        - "3306:3306"
+      volumes:
+        # 初期データを投入するSQLが格納されているdir
+        - mysql_init:/docker-entrypoint-initdb.d
+        # 永続化するときにマウントするdir
+        - mysql_data:/var/lib/mysql
+      environment:
+        MYSQL_ROOT_PASSWORD: root
+        MYSQL_USER: tech
+        MYSQL_PASSWORD: tech
+        TZ: Asia/Tokyo
+      networks:
+        default:
+          ipv4_address: 172.16.0.5
+networks:
+  default:
+    name: app_net
+    driver: bridge
+    ipam:
+     driver: default
+     config:
+       - subnet: 172.16.0.0/24
+volumes:
+  ssl:
+    driver_opts:
+      type: none
+      device: $PWD/ssl
+      o: bind
+  mysql_init:
+    driver_opts:
+      type: none
+      device: $PWD/db/mysql_init
+      o: bind
+  mysql_data:
+    driver_opts:
+      type: none
+      device: $PWD/db/mysql_data
+      o: bind
+  app:
+    driver_opts:
+      type: none
+      device: $PWD/app
+      o: bind
+  app_log:
+    driver_opts:
+      type: none
+      device: $PWD/log
+      o: bind
+  apache:
+    driver_opts:
+      type: none
+      device: $PWD/web
+      o: bind
+        

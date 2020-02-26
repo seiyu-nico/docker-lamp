@@ -1,0 +1,11 @@
+app/*
+!.gitkeep
+
+db/mysql_data/*
+!.gitkeep
+
+log/*
+
+.project
+.buildpath
+.settings/*
